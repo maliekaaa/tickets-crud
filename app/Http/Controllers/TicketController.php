@@ -7,32 +7,53 @@ use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 
+// ✅ Import Form Request classes
+use App\Http\Requests\StoreTicketRequest;
+use App\Http\Requests\UpdateTicketRequest;
+
+/**
+ * TicketController
+ * 
+ * Controller untuk mengelola tiket dengan Input Validation.
+ * 
+ * PERBEDAAN DENGAN VALIDASI DI CONTROLLER:
+ * 
+ * ❌ SEBELUM (Validasi inline - kotor):
+ * public function store(Request $request) {
+ *     $validated = $request->validate([
+ *         'title' => 'required|string|max:255',
+ *         'description' => 'required|string|min:20',
+ *         // ... 10+ rules lainnya
+ *     ], [
+ *         'title.required' => 'Judul wajib diisi.',
+ *         // ... 20+ custom messages
+ *     ]);
+ *     // Controller jadi panjang dan sulit dibaca
+ * }
+ * 
+ * ✅ SESUDAH (Form Request - bersih):
+ * public function store(StoreTicketRequest $request) {
+ *     Ticket::create($request->validated());
+ *     // Controller singkat dan fokus pada logic
+ * }
+ * 
+ * Materi Minggu 3 - Hari 2: Input Validation
+ */
 class TicketController extends Controller
 {
     /**
-     * Display a listing of the tickets.
-     * 
-     * GET /tickets
-     * 
-     * @return View
+     * Display a listing of tickets.
      */
     public function index(): View
     {
-        // Mengambil semua tiket dengan eager loading user
-        // Eager loading mencegah N+1 query problem
-        $tickets = Ticket::with('user')
-            ->orderBy('created_at', 'desc')
-            ->paginate(10);
-
+        // Ambil semua tiket, urutkan dari terbaru
+        $tickets = Ticket::latest()->paginate(10);
+        
         return view('tickets.index', compact('tickets'));
     }
 
     /**
      * Show the form for creating a new ticket.
-     * 
-     * GET /tickets/create
-     * 
-     * @return View
      */
     public function create(): View
     {
@@ -42,61 +63,58 @@ class TicketController extends Controller
     /**
      * Store a newly created ticket in storage.
      * 
-     * POST /tickets
+     * ✅ MENGGUNAKAN FORM REQUEST: StoreTicketRequest
      * 
-     * @param Request $request
-     * @return RedirectResponse
+     * FLOW:
+     * 1. Request masuk
+     * 2. StoreTicketRequest OTOMATIS dipanggil
+     * 3. authorize() dicek → jika false, throw 403
+     * 4. prepareForValidation() dijalankan → trim, sanitize
+     * 5. rules() divalidasi → jika gagal, redirect back dengan errors
+     * 6. passedValidation() dijalankan → sanitasi tambahan
+     * 7. Jika SEMUA OK, baru masuk ke method ini
+     * 8. $request->validated() berisi data yang sudah bersih & valid
+     * 
+     * @param StoreTicketRequest $request  ← Ganti Request dengan StoreTicketRequest
      */
-    public function store(Request $request): RedirectResponse
+    public function store(StoreTicketRequest $request): RedirectResponse
     {
-        // Validasi input
-        // Jika gagal, otomatis redirect back dengan error messages
-        $validated = $request->validate([
-            'title' => 'required|string|max:255',
-            'description' => 'required|string|min:10',
-            'priority' => 'required|in:low,medium,high',
-        ]);
-
-        // Tambahkan user_id dari user yang sedang login
-        // Untuk sementara, kita hardcode user_id = 1 (untuk testing)
-        // Nanti di materi Auth akan diganti dengan auth()->id()
-        $validated['user_id'] = auth()->id() ?? 1;
-
-        // Simpan tiket baru
-        $ticket = Ticket::create($validated);
-
-        // Redirect ke halaman index dengan pesan sukses
+        // ✅ Validasi sudah OTOMATIS terjadi sebelum sampai di sini!
+        // Jika ada error, user sudah di-redirect back dengan pesan error
+        
+        // $request->validated() hanya berisi field yang ada di rules()
+        // dan sudah melewati validasi + sanitasi
+        $validatedData = $request->validated();
+        
+        // ⚠️ TEMPORARY: Tambahkan user_id hardcode (belum ada auth - Minggu 4)
+        // TODO: Ganti dengan Auth::id() di Minggu 4
+        $validatedData['user_id'] = 1;
+        
+        // Set default status untuk tiket baru
+        $validatedData['status'] = 'open';
+        
+        // Simpan ke database
+        $ticket = Ticket::create($validatedData);
+        
+        // Redirect dengan flash message
         return redirect()
-            ->route('tickets.index')
+            ->route('tickets.show', $ticket)
             ->with('success', 'Tiket berhasil dibuat!');
     }
 
     /**
      * Display the specified ticket.
-     * 
-     * GET /tickets/{ticket}
-     * 
-     * @param Ticket $ticket - Route Model Binding
-     * @return View
      */
     public function show(Ticket $ticket): View
     {
-        // Laravel otomatis mencari Ticket berdasarkan ID dari URL
-        // Jika tidak ditemukan, otomatis return 404
+        // Load relasi jika ada
+        $ticket->load(['user', 'comments.user']);
         
-        // Load relasi user
-        $ticket->load('user');
-
         return view('tickets.show', compact('ticket'));
     }
 
     /**
      * Show the form for editing the specified ticket.
-     * 
-     * GET /tickets/{ticket}/edit
-     * 
-     * @param Ticket $ticket
-     * @return View
      */
     public function edit(Ticket $ticket): View
     {
@@ -106,45 +124,43 @@ class TicketController extends Controller
     /**
      * Update the specified ticket in storage.
      * 
-     * PUT/PATCH /tickets/{ticket}
+     * ✅ MENGGUNAKAN FORM REQUEST: UpdateTicketRequest
      * 
-     * @param Request $request
+     * PERBEDAAN DENGAN STORE:
+     * - UpdateTicketRequest punya field 'status' tambahan
+     * - Authorization bisa dicek (ownership) - nanti di Minggu 4
+     * 
+     * @param UpdateTicketRequest $request  ← Ganti Request dengan UpdateTicketRequest
      * @param Ticket $ticket
-     * @return RedirectResponse
      */
-    public function update(Request $request, Ticket $ticket): RedirectResponse
+    public function update(UpdateTicketRequest $request, Ticket $ticket): RedirectResponse
     {
-        // Validasi input
-        $validated = $request->validate([
-            'title' => 'required|string|max:255',
-            'description' => 'required|string|min:10',
-            'status' => 'required|in:open,in_progress,closed',
-            'priority' => 'required|in:low,medium,high',
-        ]);
-
-        // Update tiket
-        $ticket->update($validated);
-
-        // Redirect ke halaman detail dengan pesan sukses
+        // ✅ Validasi sudah OTOMATIS terjadi!
+        // UpdateTicketRequest memvalidasi: title, description, status, priority
+        
+        // Update tiket dengan data yang sudah valid
+        $ticket->update($request->validated());
+        
         return redirect()
             ->route('tickets.show', $ticket)
-            ->with('success', 'Tiket berhasil diupdate!');
+            ->with('success', 'Tiket berhasil diperbarui!');
     }
 
     /**
      * Remove the specified ticket from storage.
      * 
-     * DELETE /tickets/{ticket}
-     * 
-     * @param Ticket $ticket
-     * @return RedirectResponse
+     * Untuk delete, kita tidak perlu Form Request karena:
+     * - Tidak ada input yang perlu divalidasi
+     * - Authorization bisa dicek di middleware atau policy (Minggu 4)
      */
     public function destroy(Ticket $ticket): RedirectResponse
     {
-        // Hapus tiket
+        // ⚠️ TEMPORARY: Tidak ada authorization check
+        // TODO: Di Minggu 4, tambahkan policy atau middleware
+        // Contoh: $this->authorize('delete', $ticket);
+        
         $ticket->delete();
-
-        // Redirect ke halaman index dengan pesan sukses
+        
         return redirect()
             ->route('tickets.index')
             ->with('success', 'Tiket berhasil dihapus!');
