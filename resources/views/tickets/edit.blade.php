@@ -31,14 +31,14 @@
                     </h5>
                 </div>
                 <div class="card-body">
-                    
+
                     {{-- ============================================ --}}
                     {{-- GLOBAL ERROR DISPLAY --}}
                     {{-- ============================================ --}}
                     @if ($errors->any())
                         <div class="alert alert-danger">
                             <h6 class="alert-heading">
-                                <i class="bi bi-exclamation-triangle"></i> 
+                                <i class="bi bi-exclamation-triangle"></i>
                                 Oops! Ada kesalahan pada input Anda.
                             </h6>
                             <ul class="mb-0 mt-2">
@@ -64,24 +64,24 @@
                             <label for="title" class="form-label">
                                 Judul Tiket <span class="text-danger">*</span>
                             </label>
-                            
+
                             {{--
                                 old('title', $ticket->title)
                                 Prioritas: old value > existing value
                             --}}
-                            <input type="text" 
-                                   name="title" 
+                            <input type="text"
+                                   name="title"
                                    id="title"
                                    class="form-control @error('title') is-invalid @enderror"
                                    value="{{ old('title', $ticket->title) }}"
                                    required
                                    minlength="5"
                                    maxlength="255">
-                            
+
                             @error('title')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
-                            
+
                             <small class="text-muted">
                                 Minimal 5 karakter, maksimal 255 karakter
                             </small>
@@ -94,53 +94,73 @@
                             <label for="description" class="form-label">
                                 Deskripsi <span class="text-danger">*</span>
                             </label>
-                            
-                            <textarea name="description" 
+
+                            <textarea name="description"
                                       id="description"
                                       class="form-control @error('description') is-invalid @enderror"
                                       rows="5"
                                       required
                                       minlength="20">{{ old('description', $ticket->description) }}</textarea>
-                            
+
                             @error('description')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
-                            
+
                             <small class="text-muted">
                                 Minimal 20 karakter
                             </small>
                         </div>
 
                         {{-- ======================================== --}}
-                        {{-- STATUS FIELD (Hanya di Edit) --}}
+                        {{-- STATUS FIELD (Admin/Staff only) --}}
+                        {{-- MINGGU 4 HARI 2: Conditional field --}}
                         {{-- ======================================== --}}
-                        <div class="mb-3">
-                            <label for="status" class="form-label">
-                                Status <span class="text-danger">*</span>
-                            </label>
-                            
-                            <select name="status" 
-                                    id="status"
-                                    class="form-select @error('status') is-invalid @enderror"
-                                    required>
-                                <option value="open" 
-                                    {{ old('status', $ticket->status) == 'open' ? 'selected' : '' }}>
-                                    🔵 Open - Belum ditangani
-                                </option>
-                                <option value="in_progress" 
-                                    {{ old('status', $ticket->status) == 'in_progress' ? 'selected' : '' }}>
-                                    🟡 In Progress - Sedang ditangani
-                                </option>
-                                <option value="closed" 
-                                    {{ old('status', $ticket->status) == 'closed' ? 'selected' : '' }}>
-                                    🟢 Closed - Selesai
-                                </option>
-                            </select>
-                            
-                            @error('status')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
+                        @if(auth()->user()->hasAnyRole(['admin', 'staff']))
+                            <div class="mb-3">
+                                <label for="status" class="form-label">
+                                    Status <span class="text-danger">*</span>
+                                    <span class="badge bg-info">Admin/Staff only</span>
+                                </label>
+
+                                <select name="status"
+                                        id="status"
+                                        class="form-select @error('status') is-invalid @enderror"
+                                        required>
+                                    <option value="open"
+                                        {{ old('status', $ticket->status) == 'open' ? 'selected' : '' }}>
+                                        🔵 Open - Belum ditangani
+                                    </option>
+                                    <option value="in_progress"
+                                        {{ old('status', $ticket->status) == 'in_progress' ? 'selected' : '' }}>
+                                        🟡 In Progress - Sedang ditangani
+                                    </option>
+                                    <option value="resolved"
+                                        {{ old('status', $ticket->status) == 'resolved' ? 'selected' : '' }}>
+                                        🟠 Resolved - Sudah diselesaikan
+                                    </option>
+                                    <option value="closed"
+                                        {{ old('status', $ticket->status) == 'closed' ? 'selected' : '' }}>
+                                        🟢 Closed - Selesai
+                                    </option>
+                                </select>
+
+                                @error('status')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        @else
+                            {{-- User biasa hanya bisa lihat status --}}
+                            <div class="mb-3">
+                                <label class="form-label">Status</label>
+                                <input type="text" class="form-control" 
+                                       value="{{ ucfirst(str_replace('_', ' ', $ticket->status)) }}" 
+                                       disabled>
+                                <small class="text-muted">
+                                    <i class="bi bi-info-circle"></i> 
+                                    Status hanya bisa diubah oleh Admin/Staff
+                                </small>
+                            </div>
+                        @endif
 
                         {{-- ======================================== --}}
                         {{-- PRIORITY FIELD --}}
@@ -149,25 +169,25 @@
                             <label for="priority" class="form-label">
                                 Prioritas <span class="text-danger">*</span>
                             </label>
-                            
-                            <select name="priority" 
+
+                            <select name="priority"
                                     id="priority"
                                     class="form-select @error('priority') is-invalid @enderror"
                                     required>
-                                <option value="low" 
+                                <option value="low"
                                     {{ old('priority', $ticket->priority) == 'low' ? 'selected' : '' }}>
                                     🟢 Low - Tidak mendesak
                                 </option>
-                                <option value="medium" 
+                                <option value="medium"
                                     {{ old('priority', $ticket->priority) == 'medium' ? 'selected' : '' }}>
                                     🟡 Medium - Perlu ditangani
                                 </option>
-                                <option value="high" 
+                                <option value="high"
                                     {{ old('priority', $ticket->priority) == 'high' ? 'selected' : '' }}>
                                     🔴 High - Sangat mendesak
                                 </option>
                             </select>
-                            
+
                             @error('priority')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
@@ -180,14 +200,14 @@
                             <label for="category" class="form-label">
                                 Kategori <span class="text-muted">(opsional)</span>
                             </label>
-                            
-                            <input type="text" 
-                                   name="category" 
+
+                            <input type="text"
+                                   name="category"
                                    id="category"
                                    class="form-control @error('category') is-invalid @enderror"
                                    value="{{ old('category', $ticket->category) }}"
                                    maxlength="100">
-                            
+
                             @error('category')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
@@ -230,8 +250,8 @@
                     <p class="text-muted mb-3">
                         Menghapus tiket bersifat permanen dan tidak dapat dibatalkan.
                     </p>
-                    <form action="{{ route('tickets.destroy', $ticket) }}" 
-                          method="POST" 
+                    <form action="{{ route('tickets.destroy', $ticket) }}"
+                          method="POST"
                           onsubmit="return confirm('Yakin ingin menghapus tiket ini? Aksi ini tidak dapat dibatalkan!');">
                         @csrf
                         @method('DELETE')

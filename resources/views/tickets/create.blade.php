@@ -31,7 +31,7 @@
                     </h5>
                 </div>
                 <div class="card-body">
-                    
+
                     {{-- ============================================ --}}
                     {{-- GLOBAL ERROR DISPLAY --}}
                     {{-- Menampilkan semua error sekaligus --}}
@@ -39,7 +39,7 @@
                     @if ($errors->any())
                         <div class="alert alert-danger">
                             <h6 class="alert-heading">
-                                <i class="bi bi-exclamation-triangle"></i> 
+                                <i class="bi bi-exclamation-triangle"></i>
                                 Oops! Ada kesalahan pada input Anda.
                             </h6>
                             <ul class="mb-0 mt-2">
@@ -64,14 +64,14 @@
                             <label for="title" class="form-label">
                                 Judul Tiket <span class="text-danger">*</span>
                             </label>
-                            
-                            {{-- 
+
+                            {{--
                                 Input dengan:
                                 - @error('title') is-invalid @enderror : tambah class jika ada error
                                 - value="{{ old('title') }}" : tampilkan input sebelumnya jika redirect back
                             --}}
-                            <input type="text" 
-                                   name="title" 
+                            <input type="text"
+                                   name="title"
                                    id="title"
                                    class="form-control @error('title') is-invalid @enderror"
                                    value="{{ old('title') }}"
@@ -79,8 +79,8 @@
                                    required
                                    minlength="5"
                                    maxlength="255">
-                            
-                            {{-- 
+
+                            {{--
                                 Per-field error display
                                 @error('field') ... @enderror
                             --}}
@@ -89,7 +89,7 @@
                                     {{ $message }}
                                 </div>
                             @enderror
-                            
+
                             <small class="text-muted">
                                 Minimal 5 karakter, maksimal 255 karakter
                             </small>
@@ -102,21 +102,21 @@
                             <label for="description" class="form-label">
                                 Deskripsi <span class="text-danger">*</span>
                             </label>
-                            
-                            <textarea name="description" 
+
+                            <textarea name="description"
                                       id="description"
                                       class="form-control @error('description') is-invalid @enderror"
                                       rows="5"
                                       placeholder="Jelaskan masalah Anda secara detail...&#10;&#10;Contoh:&#10;- Langkah untuk reproduce bug&#10;- Error message yang muncul&#10;- Expected behavior"
                                       required
                                       minlength="20">{{ old('description') }}</textarea>
-                            
+
                             @error('description')
                                 <div class="invalid-feedback">
                                     {{ $message }}
                                 </div>
                             @enderror
-                            
+
                             <small class="text-muted">
                                 Minimal 20 karakter. Jelaskan dengan detail agar mudah ditangani.
                             </small>
@@ -129,14 +129,14 @@
                             <label for="priority" class="form-label">
                                 Prioritas <span class="text-danger">*</span>
                             </label>
-                            
-                            <select name="priority" 
+
+                            <select name="priority"
                                     id="priority"
                                     class="form-select @error('priority') is-invalid @enderror"
                                     required>
                                 <option value="">-- Pilih Prioritas --</option>
-                                
-                                {{-- 
+
+                                {{--
                                     old('priority') == 'value' ? 'selected' : ''
                                     Mempertahankan pilihan sebelumnya jika ada error
                                 --}}
@@ -150,7 +150,7 @@
                                     🔴 High - Sangat mendesak, perlu ditangani segera
                                 </option>
                             </select>
-                            
+
                             @error('priority')
                                 <div class="invalid-feedback">
                                     {{ $message }}
@@ -165,15 +165,15 @@
                             <label for="category" class="form-label">
                                 Kategori <span class="text-muted">(opsional)</span>
                             </label>
-                            
-                            <input type="text" 
-                                   name="category" 
+
+                            <input type="text"
+                                   name="category"
                                    id="category"
                                    class="form-control @error('category') is-invalid @enderror"
                                    value="{{ old('category') }}"
                                    placeholder="Contoh: Bug, Feature Request, Question"
                                    maxlength="100">
-                            
+
                             @error('category')
                                 <div class="invalid-feedback">
                                     {{ $message }}
